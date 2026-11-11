@@ -240,29 +240,29 @@ class CreatedObject:
 
 
         # create center hole
-        centerHoleSketch = sketches.add(root.xYConstructionPlane)
+        centerHoleSketch = rotor.sketches.add(root.xYConstructionPlane)
         sketchCircles = centerHoleSketch.sketchCurves.sketchCircles
-        centerPoint = adsk.core.Point3D.create(E, 0, 0)
+        centerPoint = adsk.core.Point3D.create(0, 0, 0)
         sketchCircles.addByCenterRadius(centerPoint, bore/2)
 
         centerHoleProfile = centerHoleSketch.profiles.item(0)
 
         distance = adsk.core.ValueInput.createByReal(rotorThickness)
-        centerExtrudes = housing.features.extrudeFeatures.addSimple(centerHoleProfile, distance, adsk.fusion.FeatureOperations.CutFeatureOperation)
+        centerExtrudes = rotor.features.extrudeFeatures.addSimple(centerHoleProfile, distance, adsk.fusion.FeatureOperations.CutFeatureOperation)
 
 
         #Create holes for pins
 
         if numHoles != 0:
-            pinHoleSketch = sketches.add(root.xYConstructionPlane)
+            pinHoleSketch = rotor.sketches.add(root.xYConstructionPlane)
             sketchCircles = pinHoleSketch.sketchCurves.sketchCircles
-            centerPoint = adsk.core.Point3D.create(E, holeCircleDiameter/2, 0)
+            centerPoint = adsk.core.Point3D.create(0, holeCircleDiameter/2, 0)
             sketchCircles.addByCenterRadius(centerPoint, holePinDiameter/2 + E)
 
             pinHoleProfile = pinHoleSketch.profiles.item(0)
 
             distance = adsk.core.ValueInput.createByReal(rotorThickness)
-            pinExtrudes = housing.features.extrudeFeatures.addSimple(pinHoleProfile, distance, adsk.fusion.FeatureOperations.CutFeatureOperation)
+            pinExtrudes = rotor.features.extrudeFeatures.addSimple(pinHoleProfile, distance, adsk.fusion.FeatureOperations.CutFeatureOperation)
 
             inputEntites = adsk.core.ObjectCollection.create()
             inputEntites.add(pinExtrudes)
@@ -329,20 +329,32 @@ class CreatedObject:
                 moveFeat = root.features.moveFeatures.add(moveInput2)
 
 
-def getPoint(t, R, Rr, E, N):
-    """ Get a point on a cycloid with the given parameters
+import os
+import sys
 
-        t: parameter
-        R: major radius
-        Rr: rolling radius
-        E: eccentricity
-        N: number of pins """
-    psi = math.atan2(math.sin((1-N)*t), ((R/(E*N))-math.cos((1-N)*t)))
-    x = (R*math.cos(t))-(Rr*math.cos(t+psi))-(E*math.cos(N*t))
-    y = (-R*math.sin(t))+(Rr*math.sin(t+psi))+(E*math.sin(N*t))
-    return (x,y)
+_parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _parent_dir not in sys.path:
+    sys.path.insert(0, _parent_dir)
+
+try:
+    import cycloidal_core
+    getPoint = cycloidal_core.get_point
+    getDist = cycloidal_core.get_distance
+except ImportError:
+    def getPoint(t, R, Rr, E, N):
+        """ Get a point on a cycloid with the given parameters
+
+            t: parameter
+            R: major radius
+            Rr: rolling radius
+            E: eccentricity
+            N: number of pins """
+        psi = math.atan2(math.sin((1-N)*t), ((R/(E*N))-math.cos((1-N)*t)))
+        x = (R*math.cos(t))-(Rr*math.cos(t+psi))-(E*math.cos(N*t))
+        y = (-R*math.sin(t))+(Rr*math.sin(t+psi))+(E*math.cos(N*t))
+        return (x,y)
 
 
-def getDist(xa, ya, xb, yb):
-    """ Get distance between two 2D points (xa,ya) and (xb,yb)"""
-    return math.sqrt((xa-xb)**2 + (ya-yb)**2)
+    def getDist(xa, ya, xb, yb):
+        """ Get distance between two 2D points (xa,ya) and (xb,yb)"""
+        return math.hypot(xa - xb, ya - yb)

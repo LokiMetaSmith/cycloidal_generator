@@ -1,23 +1,26 @@
 #Author - mawildoer
 #Description - cycloidal drive generator
 
-import adsk.core, adsk.fusion, adsk.cam, traceback
+try:
+    import adsk.core, adsk.fusion, adsk.cam
+except ImportError:
+    pass
+import traceback
 import math
 
-def getPoint(t, R, Rr, E, N):
-    #psi = -math.atan(math.sin((1 - N) * theta) / ((R / (E * N)) - math.cos((1 - N) * theta)))
-    #x = R * math.cos(theta) - Rr * math.cos(theta - psi) - E * math.cos(N * theta)
-    #y =  - R * math.sin(theta) + Rr * math.sin(theta - psi) + E * math.cos(N * theta)
-    psi = math.atan2(math.sin((1-N)*t), ((R/(E*N))-math.cos((1-N)*t)))
+try:
+    import cycloidal_core
+    getPoint = cycloidal_core.get_point
+    getDist = cycloidal_core.get_distance
+except ImportError:
+    def getPoint(t, R, Rr, E, N):
+        psi = math.atan2(math.sin((1-N)*t), ((R/(E*N))-math.cos((1-N)*t)))
+        x = (R*math.cos(t))-(Rr*math.cos(t+psi))-(E*math.cos(N*t))
+        y = (-R*math.sin(t))+(Rr*math.sin(t+psi))+(E*math.cos(N*t))
+        return (x, y)
 
-    x = (R*math.cos(t))-(Rr*math.cos(t+psi))-(E*math.cos(N*t))
-    y = (-R*math.sin(t))+(Rr*math.sin(t+psi))+(E*math.sin(N*t))
-    #x = (10*math.cos(t))-(1.5*math.cos(t+math.atan(math.sin(-9*t)/((4/3)-math.cos(-9*t)))))-(0.75*math.cos(10*t))
-    #y = (-10*math.sin(t))+(1.5*math.sin(t+math.atan(math.sin(-9*t)/((4/3)-math.cos(-9*t)))))+(0.75*math.sin(10*t))
-    return (x,y)
-
-def getDist(xa, ya, xb, yb):
-    return math.sqrt((xa-xb)**2 + (ya-yb)**2)
+    def getDist(xa, ya, xb, yb):
+        return math.hypot(xa - xb, ya - yb)
 
 def run(context):
     ui = None
